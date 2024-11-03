@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Rewards Challenge</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f8f0;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .environment-view {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(to bottom, #87CEEB, #90EE90);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: all 0.5s ease;
+        }
+        
+        .challenge-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .challenge-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .challenge-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .rewards-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .reward-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .progress-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .tree {
+            position: absolute;
+            bottom: 0;
+            font-size: 40px;
+            transition: all 0.3s ease;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: #4CAF50;
+            color: white;
+            margin: 5px;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Green Rewards Challenge</h1>
+        
+        <div class="environment-view" id="environmentView">
+            <!-- Trees and environmental elements will be added here -->
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-card">
+                <h3>Green Points</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="pointsProgress"></div>
+                </div>
+                <p id="pointsText">0 points</p>
+            </div>
+            <div class="progress-card">
+                <h3>Environmental Impact</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="impactProgress"></div>
+                </div>
+                <p id="impactText">0% improved</p>
+            </div>
+            <div class="progress-card">
+                <h3>Level</h3>
+                <h2 id="levelText">1</h2>
+                <p id="levelTitle">Eco Beginner</p>
+            </div>
+        </div>
+        
+        <div class="challenge-section" id="challengeSection">
+            <!-- Daily challenges will be added here -->
+        </div>
+        
+        <div class="rewards-section">
+            <h2>Rewards & Achievements</h2>
+            <div id="rewardsContainer"></div>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Game state
+        const gameState = {
+            points: 0,
+            level: 1,
+            impact: 0,
+            completedChallenges: [],
+            unlockedRewards: [],
+            trees: 0
+        };
+
+        // Challenges database
+        const challenges = [
+            {
+                id: 1,
+                title: "Zero Waste Day",
+                description: "Go through entire day without generating plastic waste",
+                points: 50,
+                impact: 5,
+                icon: "♻️"
+            },
+            {
+                id: 2,
+                title: "Green Transport",
+                description: "Use public transport or bicycle for all travel today",
+                points: 40,
+                impact: 4,
+                icon: "🚲"
+            },
+            {
+                id: 3,
+                title: "Energy Saver",
+                description: "Reduce electricity usage by 50% today",
+                points: 30,
+                impact: 3,
+                icon: "💡"
+            },
+            {
+                id: 4,
+                title: "Plant a Tree",
+                description: "Plant a tree in your community",
+                points: 100,
+                impact: 10,
+                icon: "🌳"
+            },
+            {
+                id: 5,
+                title: "Local Food Hero",
+                description: "Buy only local produce for a day",
+                points: 25,
+                impact: 2,
+                icon: "🥬"
+            }
+        ];
+
+        // Rewards database
+        const rewards = [
+            {
+                id: 1,
+                title: "Eco Warrior Badge",
+                requirement: 100,
+                icon: "🏆"
+            },
+            {
+                id: 2,
+                title: "Green Champion",
+                requirement: 250,
+                icon: "👑"
+            },
+            {
+                id: 3,
+                title: "Earth Guardian",
+                requirement: 500,
+                icon: "🌍"
+            },
+            {
+                id: 4,
+                title: "Environmental Master",
+                requirement: 1000,
+                icon: "⭐"
+            }
+        ];
+
+        // Initialize game
+        function initGame() {
+            renderChallenges();
+            renderRewards();
+            updateProgress();
+            addInitialTrees();
+        }
+
+        // Render challenges
+        function renderChallenges() {
+            const container = document.getElementById('challengeSection');
+            container.innerHTML = '';
+
+            challenges.forEach(challenge => {
+                const completed = gameState.completedChallenges.includes(challenge.id);
+                const card = document.createElement('div');
+                card.className = 'challenge-card';
+                card.innerHTML = `
+                    <h3>${challenge.icon} ${challenge.title}</h3>
+                    <p>${challenge.description}</p>
+                    <p>Rewards: ${challenge.points} points</p>
+                    <button class="btn" 
+                            onclick="completeChallenge(${challenge.id})"
+                            ${completed ? 'disabled' : ''}>
+                        ${completed ? 'Completed' : 'Complete Challenge'}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Complete a challenge
+        function completeChallenge(challengeId) {
+            const challenge = challenges.find(c => c.id === challengeId);
+            if (!challenge || gameState.completedChallenges.includes(challengeId)) return;
+
+            // Update game state
+            gameState.points += challenge.points;
+            gameState.impact += challenge.impact;
+            gameState.completedChallenges.push(challengeId);
+
+            // Plant trees based on impact
+            if (challenge.impact >= 5) {
+                plantTree();
+            }
+
+            // Check for level up
+            checkLevelUp();
+
+            // Check for new rewards
+            checkRewards();
+
+            // Update UI
+            updateProgress();
+            renderChallenges();
+            showNotification(`Challenge completed! +${challenge.points} points`);
+        }
+
+        // Plant a tree
+        function plantTree() {
+            const tree = document.createElement('div');
+            tree.className = 'tree';
+            tree.textContent = '🌳';
+            tree.style.left = `${Math.random() * 90}%`;
+            document.getElementById('environmentView').appendChild(tree);
+            gameState.trees++;
+        }
+
+        // Add initial trees
+        function addInitialTrees() {
+            for (let i = 0; i < 3; i++) {
+                plantTree();
+            }
+        }
+
+        // Check for level up
+        function checkLevelUp() {
+            const newLevel = Math.floor(gameState.points / 200) + 1;
+            if (newLevel > gameState.level) {
+                gameState.level = newLevel;
+                showNotification(`Level Up! You are now level ${newLevel}`);
+                updateLevelTitle();
+            }
+        }
+
+        // Update level title
+        function updateLevelTitle() {
+            const titles = [
+                "Eco Beginner",
+                "Green Explorer",
+                "Nature Guardian",
+                "Earth Protector",
+                "Environmental Master"
+            ];
+            document.getElementById('levelTitle').textContent = 
+                titles[Math.min(gameState.level - 1, titles.length - 1)];
+        }
+
+        // Check for new rewards
+        function checkRewards() {
+            rewards.forEach(reward => {
+                if (gameState.points >= reward.requirement && 
+                    !gameState.unlockedRewards.includes(reward.id)) {
+                    gameState.unlockedRewards.push(reward.id);
+                    showNotification(`New Reward Unlocked: ${reward.title}`);
+                    renderRewards();
+                }
+            });
+        }
+
+        // Render rewards
+        function renderRewards() {
+            const container = document.getElementById('rewardsContainer');
+            container.innerHTML = '';
+
+            rewards.forEach(reward => {
+                const unlocked = gameState.unlockedRewards.includes(reward.id);
+                const item = document.createElement('div');
+                item.className = 'reward-item';
+                item.innerHTML = `
+                    <span>${reward.icon}</span>
+                    <span style="margin-left: 10px">${reward.title}</span>
+                    <span style="margin-left: auto">
+                        ${unlocked ? 
+                            '<span class="badge">Unlocked</span>' : 
+                            `${gameState.points}/${reward.requirement} points`}
+                    </span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Update progress displays
+        function updateProgress() {
+            document.getElementById('pointsText').textContent = `${gameState.points} points`;
+            document.getElementById('pointsProgress').style.width = `${Math.min(gameState.points / 10, 100)}%`;
+            
+            document.getElementById('impactText').textContent = `${gameState.impact}% improved`;
+            document.getElementById('impactProgress').style.width = `${gameState.impact}%`;
+            
+            document.getElementById('levelText').textContent = gameState.level;
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.opacity = '1';
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+            }, 3000);
+        }
+
+        // Reset daily challenges
+        function resetDailyChallenges() {
+            gameState.completedChallenges = [];
+            renderChallenges();
+            showNotification('New daily challenges available!');
+        }
+
+        // Start the game
+        initGame();
+
+        // Reset challenges daily
+        setInterval(resetDailyChallenges, 24 * 60 * 60 * 1000);
+    </script>
+</body>
+</html>
